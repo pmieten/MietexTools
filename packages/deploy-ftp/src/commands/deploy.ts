@@ -2,7 +2,8 @@ import { execSync } from "node:child_process";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Client } from "basic-ftp";
-import { loadConfig } from "../utils/config.js";
+import { resolveConfig } from "../utils/config.js";
+import type { FtpConfigOverrides } from "../utils/config.js";
 import { log, timestamp } from "../utils/helpers.js";
 import { connect, listDir, ensureDir, createTempDir, uploadDir, renameRemote, removeDir } from "../utils/ftp.js";
 
@@ -13,8 +14,8 @@ const PROJECT_ROOT = join(__dirname, "..", "..");
  * Run the full deploy pipeline:
  * build → upload to temp → rename current → rename temp → cleanup backups.
  */
-export async function deploy(key: string | null): Promise<void> {
-  const cfg = loadConfig(key);
+export async function deploy(key: string | null, overrides: FtpConfigOverrides = {}): Promise<void> {
+  const cfg = resolveConfig(key, overrides);
   const tempSuffix = "-temp";
   const appFolder = cfg.currentApp;
   const tempFolder = appFolder + tempSuffix;

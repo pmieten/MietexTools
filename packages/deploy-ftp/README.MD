@@ -119,6 +119,39 @@ export FTP_DEPLOY_KEY="my-secret-passphrase"
 deploy-ftp
 ```
 
+### Run Without a Config File
+
+You can deploy without ever running `--init` by passing all required settings via CLI flags or environment variables:
+
+**Via CLI flags:**
+```bash
+deploy-ftp \
+  --host ftp.example.com \
+  --user john \
+  --password "s3cret" \
+  --path /public_html \
+  --app-folder myapp \
+  --local-dist dist \
+  --keep-backups 5
+```
+
+**Via environment variables:**
+```bash
+export FTP_HOST=ftp.example.com
+export FTP_USER=john
+export FTP_PASSWORD=s3cret
+export FTP_PATH=/public_html
+export FTP_APP_FOLDER=myapp
+deploy-ftp
+```
+
+**Mix & match** — CLI flags override env vars, which override the config file:
+
+```bash
+# Most settings from config file, override app folder for a one-off deploy
+deploy-ftp --app-folder myapp-staging
+```
+
 ---
 
 ## Deploy Logic
@@ -172,7 +205,33 @@ If no key is provided, the password is stored in **plaintext** (a warning is sho
 | `--init` | `-i` | Interactive configuration wizard |
 | `--init --credential` | `-i -c` | Update only username/password |
 | `--key <passphrase>` | `-k` | Encryption key for the password |
+| `--host <host>` | — | FTP server address |
+| `--port <port>` | — | FTP port (default: 21) |
+| `--user <username>` | `-u` | FTP username |
+| `--password <pwd>` | `-p` | FTP password |
+| `--path <path>` | — | Remote path (e.g. `/public_html`) |
+| `--app-folder <name>` | — | Remote app folder name |
+| `--local-dist <dir>` | — | Local dist folder (default: `dist`) |
+| `--keep-backups <n>` | — | Max backups to keep (default: 10) |
+| `--secure` / `--no-secure` | — | Enable / disable FTPS/TLS |
 | `--help` | `-h` | Show help text |
+
+### Environment Variables
+
+All CLI flags have corresponding environment variables (lower priority than CLI flags):
+
+| Env Variable | Equivalent Flag |
+|---|---|
+| `FTP_HOST` | `--host` |
+| `FTP_PORT` | `--port` |
+| `FTP_USER` | `--user` |
+| `FTP_PASSWORD` | `--password` |
+| `FTP_PATH` | `--path` |
+| `FTP_APP_FOLDER` | `--app-folder` |
+| `FTP_LOCAL_DIST` | `--local-dist` |
+| `FTP_KEEP_BACKUPS` | `--keep-backups` |
+| `FTP_SECURE` | `--secure` (set to `"true"`) |
+| `FTP_DEPLOY_KEY` | `--key` |
 
 ---
 
