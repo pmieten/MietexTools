@@ -1,0 +1,18 @@
+{
+  "name": "mietextools",
+  "private": true,
+  "description": "Monorepo for MietexTools – utility tools for developers",
+  "type": "module",
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "lint": "npm run lint --workspaces",
+    "test": "npm run test --workspaces",
+    "publish": "node scripts/publish.mjs"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}
