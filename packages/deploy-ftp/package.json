@@ -1,6 +1,6 @@
 {
   "name": "@mietextools/deploy-ftp",
-  "version": "0.1.3",
+  "version": "0.0.1",
   "description": "CLI tool for deploying files to an FTP server with zero-downtime rotation",
   "type": "module",
   "bin": {

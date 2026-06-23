@@ -12,15 +12,11 @@
  *   4. Rename "{currentApp}-temp" → "{currentApp}" (zero-downtime swap)
  *   5. Keep max N backups, remove oldest
  *
- * Credentials stored in: %USERPROFILE%\.mietextools\deploy-ftp.json
- * (never in the repository)
- *
- * Can also run with CLI flags or environment variables — no config file needed.
+ * Config file path is provided via --config <path> (no default).
  */
 
 import { deploy } from "./commands/deploy.js";
 import { initConfig } from "./commands/init.js";
-import { CONFIG_PATH } from "./utils/config.js";
 import type { FtpConfigOverrides } from "./utils/config.js";
 
 // ─── CLI arguments ──────────────────────────────────────────────────────────
@@ -42,6 +38,10 @@ function getFlag(name: string, ...aliases: string[]): string | null {
 function getEncryptionKey(): string | null {
   if (process.env.FTP_DEPLOY_KEY) return process.env.FTP_DEPLOY_KEY;
   return getFlag("--key", "-k");
+}
+
+function getConfigPath(): string | null {
+  return getFlag("--config", "-C");
 }
 
 function hasFlag(...flags: string[]): boolean {
@@ -75,16 +75,18 @@ function parseOverrides(): FtpConfigOverrides {
 // ─── Entry point ────────────────────────────────────────────────────────────
 
 const encKey = getEncryptionKey();
+const configPath = getConfigPath();
 
 if (hasFlag("--init", "-i") && hasFlag("--credential", "-c")) {
-  await initConfig(encKey, true);
+  await initConfig(configPath, encKey, true);
 } else if (hasFlag("--init", "-i")) {
-  await initConfig(encKey, false);
+  await initConfig(configPath, encKey, false);
 } else if (hasFlag("--help", "-h")) {
   console.log(`
 Usage: deploy-ftp [options]
 
 Options:
+  -C, --config <path>   Path to config JSON file (required for deploy; prompted in --init if omitted)
   --init, -i             Create / update FTP config
   -c, --credential       (with --init) Only prompt for username/password
   -k, --key <passphrase> Encryption key — password is encrypted in config
@@ -100,12 +102,21 @@ Options:
   --no-secure            Disable FTPS/TLS
   --help, -h             Show this help
 
-Config stored at: ${CONFIG_PATH}
+Examples:
+  deploy-ftp --config "%USERPROFILE%\\.mietextools\\deploy-ftp.json"
+  deploy-ftp --init --config "%USERPROFILE%\\.mietextools\\myproject.json" --key "my-passphrase"
+  deploy-ftp --config "%USERPROFILE%\\.mietextools\\deploy-ftp.json" --key "my-passphrase"
 
 Environment variables: FTP_HOST, FTP_PORT, FTP_USER, FTP_PASSWORD,
   FTP_PATH, FTP_APP_FOLDER, FTP_LOCAL_DIST, FTP_KEEP_BACKUPS,
   FTP_SECURE, FTP_DEPLOY_KEY
   `);
 } else {
-  await deploy(encKey, parseOverrides());
+  if (!configPath) {
+    console.error("[✖] --config <path> is required. Provide the path to your config file.");
+    console.error("    Example: deploy-ftp --config \"%USERPROFILE%\\.mietextools\\deploy-ftp.json\"");
+    console.error("    Or run: deploy-ftp --init --config <path>\n");
+    process.exit(1);
+  }
+  await deploy(configPath, encKey, parseOverrides());
 }

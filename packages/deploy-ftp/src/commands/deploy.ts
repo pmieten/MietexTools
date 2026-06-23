@@ -14,8 +14,8 @@ const PROJECT_ROOT = join(__dirname, "..", "..");
  * Run the full deploy pipeline:
  * build → upload to temp → rename current → rename temp → cleanup backups.
  */
-export async function deploy(key: string | null, overrides: FtpConfigOverrides = {}): Promise<void> {
-  const cfg = resolveConfig(key, overrides);
+export async function deploy(configPath: string, key: string | null, overrides: FtpConfigOverrides = {}): Promise<void> {
+  const cfg = resolveConfig(configPath, key, overrides);
   const tempSuffix = "-temp";
   const appFolder = cfg.currentApp;
   const tempFolder = appFolder + tempSuffix;

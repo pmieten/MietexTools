@@ -21,12 +21,9 @@ vi.mock("node:fs", () => ({
   mkdirSync: (...args: any[]) => mockMkdirSync(...args),
 }));
 
-// Mock homedir to return a predictable path
-vi.mock("node:os", () => ({
-  homedir: () => "/fake/home",
-}));
-
 // ─── Helpers ────────────────────────────────────────────────────────────────
+
+const MOCK_CONFIG_PATH = "/fake/home/.mietextools/deploy-ftp.json";
 
 const VALID_CONFIG: FtpConfig = {
   host: "ftp.example.com",
@@ -53,14 +50,14 @@ afterEach(() => {
 describe("loadConfig", () => {
   it("returns null when config file does not exist", () => {
     mockExistsSync.mockReturnValue(false);
-    const result = loadConfig();
+    const result = loadConfig(MOCK_CONFIG_PATH);
     expect(result).toBeNull();
   });
 
   it("loads and returns config when file exists", () => {
     mockExistsSync.mockReturnValue(true);
     mockReadFileSync.mockReturnValue(JSON.stringify(VALID_CONFIG));
-    const result = loadConfig();
+    const result = loadConfig(MOCK_CONFIG_PATH);
     expect(result).toEqual(VALID_CONFIG);
   });
 
@@ -75,7 +72,7 @@ describe("loadConfig", () => {
     const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => {
       throw new Error("process.exit called");
     });
-    expect(() => loadConfig("wrong-key")).toThrow("process.exit called");
+    expect(() => loadConfig(MOCK_CONFIG_PATH, "wrong-key")).toThrow("process.exit called");
     exitSpy.mockRestore();
   });
 
@@ -84,7 +81,7 @@ describe("loadConfig", () => {
     mockReadFileSync.mockReturnValue(
       JSON.stringify({ ...VALID_CONFIG, password: "plaintext-password" }),
     );
-    const result = loadConfig("some-key");
+    const result = loadConfig(MOCK_CONFIG_PATH, "some-key");
     expect(result!.password).toBe("plaintext-password");
   });
 
@@ -94,7 +91,7 @@ describe("loadConfig", () => {
     const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => {
       throw new Error("process.exit called");
     });
-    expect(() => loadConfig()).toThrow("process.exit called");
+    expect(() => loadConfig(MOCK_CONFIG_PATH)).toThrow("process.exit called");
     exitSpy.mockRestore();
   });
 });
@@ -228,7 +225,7 @@ describe("resolveConfig", () => {
   it("resolves from file config when present", () => {
     mockExistsSync.mockReturnValue(true);
     mockReadFileSync.mockReturnValue(JSON.stringify(VALID_CONFIG));
-    const result = resolveConfig(null, {});
+    const result = resolveConfig(MOCK_CONFIG_PATH, null, {});
     expect(result.host).toBe("ftp.example.com");
     expect(result.user).toBe("john");
   });
@@ -236,14 +233,14 @@ describe("resolveConfig", () => {
   it("applies overrides on top of file config", () => {
     mockExistsSync.mockReturnValue(true);
     mockReadFileSync.mockReturnValue(JSON.stringify(VALID_CONFIG));
-    const result = resolveConfig(null, { host: "override.example.com" });
+    const result = resolveConfig(MOCK_CONFIG_PATH, null, { host: "override.example.com" });
     expect(result.host).toBe("override.example.com");
     expect(result.user).toBe("john"); // from file config
   });
 
   it("uses CLI flags as sole source when no config file exists", () => {
     mockExistsSync.mockReturnValue(false);
-    const result = resolveConfig(null, {
+    const result = resolveConfig(MOCK_CONFIG_PATH, null, {
       host: "cli.example.com",
       user: "cli-user",
       password: "cli-pwd",
@@ -262,7 +259,7 @@ describe("resolveConfig", () => {
     const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => {
       throw new Error("process.exit called");
     });
-    expect(() => resolveConfig(null, {})).toThrow("process.exit called");
+    expect(() => resolveConfig(MOCK_CONFIG_PATH, null, {})).toThrow("process.exit called");
     exitSpy.mockRestore();
   });
 
@@ -272,7 +269,7 @@ describe("resolveConfig", () => {
       throw new Error("process.exit called");
     });
     expect(() =>
-      resolveConfig(null, { host: "h", user: "u", password: "p" }),
+      resolveConfig(MOCK_CONFIG_PATH, null, { host: "h", user: "u", password: "p" }),
     ).toThrow("process.exit called");
     exitSpy.mockRestore();
   });
@@ -280,7 +277,7 @@ describe("resolveConfig", () => {
   it("validates successfully with all required fields from mixed sources", () => {
     mockExistsSync.mockReturnValue(false);
     // Provide required fields via combination
-    const result = resolveConfig(null, {
+    const result = resolveConfig(MOCK_CONFIG_PATH, null, {
       host: "h",
       user: "u",
       password: "p",
@@ -300,15 +297,15 @@ describe("saveConfig", () => {
 
   it("creates config directory if it does not exist", () => {
     mockExistsSync.mockReturnValue(false);
-    saveConfig(VALID_CONFIG);
+    saveConfig(MOCK_CONFIG_PATH, VALID_CONFIG);
     expect(mockMkdirSync).toHaveBeenCalled();
   });
 
   it("writes config to disk as JSON", () => {
     mockExistsSync.mockReturnValue(true);
-    saveConfig(VALID_CONFIG);
+    saveConfig(MOCK_CONFIG_PATH, VALID_CONFIG);
     expect(mockWriteFileSync).toHaveBeenCalledWith(
-      expect.stringContaining("deploy-ftp.json"),
+      MOCK_CONFIG_PATH,
       JSON.stringify(VALID_CONFIG, null, 2),
       "utf-8",
     );
@@ -317,7 +314,7 @@ describe("saveConfig", () => {
   it("encrypts password when key is provided", () => {
     mockExistsSync.mockReturnValue(true);
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-    saveConfig(VALID_CONFIG, "my-key");
+    saveConfig(MOCK_CONFIG_PATH, VALID_CONFIG, "my-key");
     // Password should be encrypted (colon-separated hex parts)
     const writeCall = mockWriteFileSync.mock.calls[0][1];
     const saved = JSON.parse(writeCall);
@@ -329,7 +326,7 @@ describe("saveConfig", () => {
   it("warns about plaintext when no key provided", () => {
     mockExistsSync.mockReturnValue(true);
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-    saveConfig(VALID_CONFIG);
+    saveConfig(MOCK_CONFIG_PATH, VALID_CONFIG);
     const saved = JSON.parse(mockWriteFileSync.mock.calls[0][1]);
     expect(saved.password).toBe("s3cret");
     logSpy.mockRestore();

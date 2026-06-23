@@ -1,6 +1,5 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
-import { homedir } from "node:os";
-import { join } from "node:path";
+import { dirname } from "node:path";
 import { decrypt, encrypt } from "./crypto.js";
 
 export interface FtpConfig {
@@ -28,17 +27,22 @@ export interface FtpConfigOverrides {
   keepBackups?: number;
 }
 
-const CONFIG_DIR = join(homedir(), ".mietextools");
-const CONFIG_PATH = join(CONFIG_DIR, "deploy-ftp.json");
+/**
+ * Return the default config path under the user's home directory.
+ */
+export function defaultConfigPath(): string {
+  const home = process.env.USERPROFILE || process.env.HOME || "";
+  return `${home}\\.mietextools\\deploy-ftp.json`;
+}
 
 /**
  * Load config from disk. Returns null if file doesn't exist.
  * Decrypts password if encrypted and key provided.
  */
-export function loadConfig(key?: string | null): FtpConfig | null {
-  if (!existsSync(CONFIG_PATH)) return null;
+export function loadConfig(configPath: string, key?: string | null): FtpConfig | null {
+  if (!existsSync(configPath)) return null;
   try {
-    const raw: FtpConfig = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
+    const raw: FtpConfig = JSON.parse(readFileSync(configPath, "utf-8"));
     if (raw.password && raw.password.includes(":") && key) {
       try {
         raw.password = decrypt(raw.password, key);
@@ -49,7 +53,7 @@ export function loadConfig(key?: string | null): FtpConfig | null {
     }
     return raw;
   } catch {
-    console.error(`[✖] Invalid JSON in ${CONFIG_PATH}`);
+    console.error(`[✖] Invalid JSON in ${configPath}`);
     process.exit(1);
   }
 }
@@ -79,8 +83,8 @@ export function applyOverrides(
  * Resolve config: load from file (if exists), apply overrides, validate, return.
  * Exits with error if required fields (host, user, password, pathToApp, currentApp) are missing.
  */
-export function resolveConfig(key: string | null, overrides: FtpConfigOverrides): FtpConfig {
-  const fileConfig = loadConfig(key);
+export function resolveConfig(configPath: string, key: string | null, overrides: FtpConfigOverrides): FtpConfig {
+  const fileConfig = loadConfig(configPath, key);
   const cfg = applyOverrides(fileConfig ?? {}, overrides);
 
   if (!cfg.host || !cfg.user || !cfg.password || !cfg.pathToApp || !cfg.currentApp) {
@@ -96,18 +100,17 @@ export function resolveConfig(key: string | null, overrides: FtpConfigOverrides)
 /**
  * Save config to disk. Encrypts password if an encryption key is provided.
  */
-export function saveConfig(cfg: FtpConfig, key?: string | null): void {
-  if (!existsSync(CONFIG_DIR)) mkdirSync(CONFIG_DIR, { recursive: true });
+export function saveConfig(configPath: string, cfg: FtpConfig, key?: string | null): void {
+  const dir = dirname(configPath);
+  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
   const toSave = { ...cfg };
   if (key && toSave.password) {
     toSave.password = encrypt(toSave.password, key);
   }
-  writeFileSync(CONFIG_PATH, JSON.stringify(toSave, null, 2), "utf-8");
+  writeFileSync(configPath, JSON.stringify(toSave, null, 2), "utf-8");
   if (key) {
-    console.log(`[✔] Config saved to ${CONFIG_PATH} (password encrypted)`);
+    console.log(`[✔] Config saved to ${configPath} (password encrypted)`);
   } else {
-    console.log(`[⚠] Config saved to ${CONFIG_PATH} (password PLAINTEXT — use --key to encrypt)`);
+    console.log(`[⚠] Config saved to ${configPath} (password PLAINTEXT — use --key to encrypt)`);
   }
 }
-
-export { CONFIG_DIR, CONFIG_PATH };

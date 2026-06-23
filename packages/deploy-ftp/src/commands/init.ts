@@ -1,7 +1,8 @@
-import { existsSync, mkdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createInterface } from "node:readline";
 import { stdin as input, stdout as output } from "node:process";
-import { saveConfig, CONFIG_DIR, CONFIG_PATH } from "../utils/config.js";
+import { join, dirname } from "node:path";
+import { saveConfig } from "../utils/config.js";
 import type { FtpConfig } from "../utils/config.js";
 import { decrypt } from "../utils/crypto.js";
 
@@ -18,14 +19,30 @@ function ask(query: string): Promise<string> {
 /**
  * Interactive wizard to create / update FTP config.
  */
-export async function initConfig(key: string | null, credentialOnly: boolean): Promise<void> {
-  if (!existsSync(CONFIG_DIR)) mkdirSync(CONFIG_DIR, { recursive: true });
+export async function initConfig(
+  configPath: string | null,
+  key: string | null,
+  credentialOnly: boolean,
+): Promise<void> {
+  // If no config path provided, prompt the user
+  if (!configPath) {
+    const example = `%USERPROFILE%\\.mietextools\\deploy-ftp-yourProjectName.json`;
+    console.log(`\nExample config path: deploy-ftp --config "${example}" --key "my-passphrase"`);
+    const raw = await ask(
+      `Config file path (e.g. ${example}): `,
+    );
+    const home = process.env.USERPROFILE || process.env.HOME || "";
+    configPath = raw || `${home}\\.mietextools\\deploy-ftp.json`;
+  }
+
+  const configDir = dirname(configPath);
+  if (!existsSync(configDir)) mkdirSync(configDir, { recursive: true });
 
   let cfg: Partial<FtpConfig> = {};
 
-  if (credentialOnly && existsSync(CONFIG_PATH)) {
+  if (credentialOnly && existsSync(configPath)) {
     // Load existing non-credential fields
-    const existing = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
+    const existing = JSON.parse(readFileSync(configPath, "utf-8"));
     if (key && existing.password && existing.password.includes(":")) {
       try {
         existing.password = decrypt(existing.password, key);
@@ -88,5 +105,23 @@ export async function initConfig(key: string | null, credentialOnly: boolean): P
     process.exit(1);
   }
 
-  saveConfig(cfg as FtpConfig, key);
+  saveConfig(configPath, cfg as FtpConfig, key);
+
+  // ── Propose to add package.json script ──
+  const addScript = await ask(
+    "\nAdd a 'deploy' script to package.json? (Y/n): ",
+  );
+  if (addScript.toLowerCase() !== "n") {
+    const pkgPath = join(process.cwd(), "package.json");
+    if (!existsSync(pkgPath)) {
+      console.log("[⚠] No package.json found in current directory. Skipping.");
+      return;
+    }
+    const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
+    const scriptCmd = `deploy-ftp --config "${configPath}"${key ? ` --key "${key}"` : ""}`;
+    pkg.scripts = pkg.scripts ?? {};
+    pkg.scripts.deploy = scriptCmd;
+    writeFileSync(pkgPath, JSON.stringify(pkg, null, 2), "utf-8");
+    console.log(`[✔] Added script to package.json: "deploy": "${scriptCmd}"`);
+  }
 }

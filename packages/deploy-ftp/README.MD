@@ -34,42 +34,75 @@ You can run `deploy-ftp` directly without installing it globally using `npx` or 
 
 ```bash
 # Using npx (comes with Node.js)
-npx @mietextools/deploy-ftp --init
+npx @mietextools/deploy-ftp --init --config "%USERPROFILE%\.mietextools\deploy-ftp-yourProjectName.json"
 
-npx @mietextools/deploy-ftp
-
-npx @mietextools/deploy-ftp --key "my-passphrase"
+npx @mietextools/deploy-ftp --config "%USERPROFILE%\.mietextools\deploy-ftp-yourProjectName.json" --key "my-passphrase"
 ```
 
 ```bash
 # Using pnpm dlx
-pnpm dlx @mietextools/deploy-ftp --init
+pnpm dlx @mietextools/deploy-ftp --init --config "%USERPROFILE%\.mietextools\deploy-ftp-yourProjectName.json"
 
-pnpm dlx @mietextools/deploy-ftp
-
-pnpm dlx @mietextools/deploy-ftp --key "my-passphrase"
+pnpm dlx @mietextools/deploy-ftp --config "%USERPROFILE%\.mietextools\deploy-ftp-yourProjectName.json" --key "my-passphrase"
 ```
 
 This is especially useful for CI/CD pipelines or one-off deployments where you don't want to permanently install the package.
+
+### Run Directly from Source
+
+During development or if you have the repository cloned, you can run the tool directly from TypeScript source files using [`tsx`](https://github.com/nicolo-ribaudo/tx) (already included as a dev dependency):
+
+```bash
+# From the packages/deploy-ftp directory
+pnpm dev -- --init --config "%USERPROFILE%\.mietextools\deploy-ftp-yourProjectName.json"
+
+pnpm dev -- --config "%USERPROFILE%\.mietextools\deploy-ftp-yourProjectName.json" --key "my-passphrase"
+```
+
+Or from the repository root using the package script directly:
+
+```bash
+pnpm --filter @mietextools/deploy-ftp dev -- --init --config "%USERPROFILE%\.mietextools\deploy-ftp-yourProjectName.json"
+```
+
+You can also use `tsx` explicitly without the npm script:
+
+```bash
+# From packages/deploy-ftp/
+npx tsx src/index.ts --init --config "%USERPROFILE%\.mietextools\deploy-ftp-yourProjectName.json"
+
+npx tsx src/index.ts --config "%USERPROFILE%\.mietextools\deploy-ftp-yourProjectName.json" --key "my-passphrase"
+```
+
+> **Note:** The `--` separator is needed before CLI arguments when using `pnpm dev` to prevent pnpm from intercepting them. When calling `tsx` directly or using `npx tsx`, no separator is required.
 
 ---
 
 ## Configuration
 
-Credentials and deployment settings are stored in:
+Credentials and deployment settings are stored in a config file whose path you choose — **no hardcoded default**.
 
-```
-%USERPROFILE%\.mietextools\deploy-ftp.json
+Provide the path via `--config <path>` (or `-C <path>`):
+
+```bash
+deploy-ftp --config "%USERPROFILE%\.mietextools\deploy-ftp-yourProjectName.json"
 ```
 
-> **Important:** This file is stored in your home directory, **never in the repository**, keeping credentials safe from accidental commits.
+> **Important:** Store the file outside your repository (e.g. in `%USERPROFILE%\.mietextools\`) to keep credentials safe from accidental commits.
 
 ### Interactive Setup
 
 Run the interactive configuration wizard:
 
 ```bash
-deploy-ftp --init
+deploy-ftp --init --config "%USERPROFILE%\.mietextools\deploy-ftp-yourProjectName.json"
+```
+
+If you omit `--config`, the wizard prompts you for the path and shows an example:
+
+```
+Example config path: deploy-ftp --config "%USERPROFILE%\.mietextools\deploy-ftp-yourProjectName.json" --key "my-passphrase"
+Config file path (e.g. %USERPROFILE%\.mietextools\deploy-ftp-yourProjectName.json):
 ```
 
 The wizard prompts for:
@@ -89,10 +122,32 @@ The wizard prompts for:
 ### Update Credentials Only
 
 ```bash
-deploy-ftp --init --credential
+deploy-ftp --init --credential --config "%USERPROFILE%\.mietextools\deploy-ftp-yourProjectName.json"
 ```
 
 Reuses existing config and only prompts for username/password — useful for rotating credentials without re-entering all settings.
+
+### Package.json Script Proposal
+
+After completing the wizard, `deploy-ftp` will ask if you want to add a `deploy` script to your project's `package.json`:
+
+```
+Add a 'deploy' script to package.json? (Y/n):
+```
+
+If you accept, a script like the following is added:
+
+```json
+"scripts": {
+  "deploy": "deploy-ftp --config \"%USERPROFILE%\\.mietextools\\deploy-ftp-yourProjectName.json\" --key \"my-passphrase\""
+}
+```
+
+Then simply run:
+
+```bash
+pnpm deploy
+```
 
 ---
 
@@ -100,23 +155,23 @@ Reuses existing config and only prompts for username/password — useful for rot
 
 ### Deploy
 
-Simply run the command to execute the full deploy pipeline:
+You **must** provide a config file path via `--config`:
 
 ```bash
-deploy-ftp
+deploy-ftp --config "%USERPROFILE%\.mietextools\deploy-ftp-yourProjectName.json"
 ```
 
 Or with an encryption key:
 
 ```bash
-deploy-ftp --key "my-secret-passphrase"
+deploy-ftp --config "%USERPROFILE%\.mietextools\deploy-ftp-yourProjectName.json" --key "my-secret-passphrase"
 ```
 
 The encryption key can also be set via the environment variable:
 
 ```bash
 export FTP_DEPLOY_KEY="my-secret-passphrase"
-deploy-ftp
+deploy-ftp --config "%USERPROFILE%\.mietextools\deploy-ftp-yourProjectName.json"
 ```
 
 ### Run Without a Config File
@@ -142,14 +197,14 @@ export FTP_USER=john
 export FTP_PASSWORD=s3cret
 export FTP_PATH=/public_html
 export FTP_APP_FOLDER=myapp
-deploy-ftp
+deploy-ftp --config "%USERPROFILE%\.mietextools\deploy-ftp-yourProjectName.json"
 ```
 
 **Mix & match** — CLI flags override env vars, which override the config file:
 
 ```bash
 # Most settings from config file, override app folder for a one-off deploy
-deploy-ftp --app-folder myapp-staging
+deploy-ftp --config "%USERPROFILE%\.mietextools\deploy-ftp-yourProjectName.json" --app-folder myapp-staging
 ```
 
 ---
@@ -187,10 +242,10 @@ Passwords can be stored encrypted using **AES-256-GCM** with key derivation via 
 
 ```bash
 # During init — password is encrypted before saving
-deploy-ftp --init --key "my-passphrase"
+deploy-ftp --init --config "%USERPROFILE%\.mietextools\deploy-ftp-yourProjectName.json" --key "my-passphrase"
 
 # During deploy — password is decrypted automatically
-deploy-ftp --key "my-passphrase"
+deploy-ftp --config "%USERPROFILE%\.mietextools\deploy-ftp-yourProjectName.json" --key "my-passphrase"
 ```
 
 If no key is provided, the password is stored in **plaintext** (a warning is shown).
@@ -201,7 +256,7 @@ If no key is provided, the password is stored in **plaintext** (a warning is sho
 
 | Flag | Alias | Description |
 |------|-------|-------------|
-| _(none)_ | — | Run the full deploy pipeline |
+| `--config <path>` | `-C` | Path to config JSON file (required for deploy; prompted in `--init` if omitted) |
 | `--init` | `-i` | Interactive configuration wizard |
 | `--init --credential` | `-i -c` | Update only username/password |
 | `--key <passphrase>` | `-k` | Encryption key for the password |
@@ -242,9 +297,9 @@ src/
 ├── index.ts              ← CLI entry point — argument parsing & routing
 ├── commands/
 │   ├── deploy.ts         ← Deploy pipeline (build → upload → swap → cleanup)
-│   └── init.ts           ← Interactive configuration wizard
+│   └── init.ts           ← Interactive configuration wizard (prompts for config path)
 └── utils/
-    ├── config.ts         ← Load/save config JSON to ~/.mietextools/deploy-ftp.json
+    ├── config.ts         ← Load/save config JSON (path provided via --config, no default)
     ├── crypto.ts         ← AES-256-GCM encrypt/decrypt logic
     ├── ftp.ts            ← FTP helpers (connect, listDir, uploadDir, rename, remove)
     └── helpers.ts        ← timestamp() formatting & log() helper
