@@ -91,19 +91,3 @@ deploy-ftp
 - Without `--key` the password is stored in plaintext — not recommended
 - The key (`--key`) can be safely committed to Git (without it the encrypted password is useless)
 
-## Publishing to npm
-
-To publish a new version of `deploy-ftp` (or any other tool in this monorepo) to npm, run the interactive publish script from the repository root:
-
-```bash
-npm run publish
-```
-
-The script will:
-1. Check if you are logged in to npm
-2. Show a list of publishable (non-private) packages
-3. Let you select a specific package or all packages
-4. Prompt for version bump type (`patch` / `minor` / `major`)
-5. Bump the version, build, and publish
-
-> The `@mietextools/deploy-ftp` package is configured with `"publishConfig": { "access": "public" }` so it can be published as a public scoped package.

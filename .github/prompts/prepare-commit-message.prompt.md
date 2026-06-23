@@ -13,7 +13,8 @@ Generate a commit message for the uncommitted git changes in this workspace.
 3. Run the full diff (`git diff --staged` or `git diff`) to inspect the actual changes.
 4. Analyze the changes and summarize what was done.
 5. Firstly, output  ONLY a commit message in **Conventional Commits** format — no extra commentary.
-6. Ask if execute commit or not. If yes, run `git commit -am "<commit message>"`. If no, exit without committing.
+6. Run `npm test` to ensure all tests pass before committing. If tests fail, stop and inform the user.
+7. Ask if execute commit or not. If yes, run `git commit -am "<commit message>"`. If no, exit without committing.
 
 ## Overrides
 

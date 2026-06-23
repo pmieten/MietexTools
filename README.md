@@ -63,6 +63,23 @@ deploy-ftp --help
 
 
 
+## 🧪 Running tests
+
+This monorepo uses **Vitest** for testing. Each package manages its own tests.
+
+```bash
+# Run all tests across all packages
+npm test
+
+# Run tests for a specific package
+npm run test -w packages/deploy-ftp
+
+# Watch mode for development
+npx -w packages/deploy-ftp vitest --watch
+```
+
+---
+
 ## Publishing to npm
 
 To publish a new version of `deploy-ftp` (or any other tool in this monorepo) to npm, run the interactive publish script from the repository root:
