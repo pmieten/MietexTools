@@ -48,6 +48,11 @@ web_modules/
 *.tsbuildinfo
 
 # Optional npm cache directory
+
+# MietexTools specific
+dist/
+.env
+.env.*
 .npm
 
 # Optional eslint cache
