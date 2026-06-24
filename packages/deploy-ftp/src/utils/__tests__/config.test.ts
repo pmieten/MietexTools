@@ -31,7 +31,7 @@ const VALID_CONFIG: FtpConfig = {
   user: "john",
   password: "s3cret",
   secure: false,
-  pathToApp: "/public_html",
+  pathToApp: "/domains/domain.name.com",
   currentApp: "myapp",
   localDist: "dist",
   keepBackups: 10,

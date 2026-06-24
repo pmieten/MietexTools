@@ -76,7 +76,7 @@ export async function initConfig(
   }
   if (!credentialOnly || !cfg.pathToApp) {
     cfg.pathToApp =
-      (await ask(`Remote pathToApp (e.g. /public_html)${cfg.pathToApp ? ` (${cfg.pathToApp})` : ""}: `)) ||
+      (await ask(`Remote pathToApp (e.g. /domains/domain.name.com)${cfg.pathToApp ? ` (${cfg.pathToApp})` : ""}: `)) ||
       cfg.pathToApp ||
       "";
   }

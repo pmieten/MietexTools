@@ -114,7 +114,7 @@ The wizard prompts for:
 | FTP username | Login username | ✅ |
 | FTP password | Login password | ✅ |
 | FTPS/TLS | Use secure FTP (y/N) | — |
-| Remote path | Remote base path (e.g. `/public_html`) | ✅ |
+| Remote path | Remote base path (e.g. `/domains/domain.name.com`) | ✅ |
 | App folder name | Name of the live app folder on server | ✅ |
 | Local dist folder | Local build output (default: `dist`) | — |
 | Max backups | Number of old releases to keep (default: `10`) | — |
@@ -184,7 +184,7 @@ deploy-ftp \
   --host ftp.example.com \
   --user john \
   --password "s3cret" \
-  --path /public_html \
+  --path /domains/domain.name.com \
   --app-folder myapp \
   --local-dist dist \
   --keep-backups 5
@@ -195,7 +195,7 @@ deploy-ftp \
 export FTP_HOST=ftp.example.com
 export FTP_USER=john
 export FTP_PASSWORD=s3cret
-export FTP_PATH=/public_html
+export FTP_PATH=//domains/domain-name-com/
 export FTP_APP_FOLDER=myapp
 deploy-ftp --config "%USERPROFILE%\.mietextools\deploy-ftp-yourProjectName.json"
 ```
@@ -264,7 +264,7 @@ If no key is provided, the password is stored in **plaintext** (a warning is sho
 | `--port <port>` | — | FTP port (default: 21) |
 | `--user <username>` | `-u` | FTP username |
 | `--password <pwd>` | `-p` | FTP password |
-| `--path <path>` | — | Remote path (e.g. `/public_html`) |
+| `--path <path>` | — | Remote path (e.g. `/domains/domain.name.com`) |
 | `--app-folder <name>` | — | Remote app folder name |
 | `--local-dist <dir>` | — | Local dist folder (default: `dist`) |
 | `--keep-backups <n>` | — | Max backups to keep (default: 10) |

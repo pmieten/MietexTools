@@ -62,7 +62,7 @@ Location: `%USERPROFILE%\.mietextools\deploy-ftp.json`
   "user": "username",
   "password": "salt:iv:tag:ciphertext",
   "secure": false,
-  "pathToApp": "/public_html",
+  "pathToApp": "/domains/domain.name.com",
   "currentApp": "my-app",
   "localDist": "dist",
   "keepBackups": 10
